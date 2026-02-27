@@ -1,0 +1,518 @@
+--[[
+    NEO ASSIST - Монохромная версия
+    Бинды: G, T, Y
+]]
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local mouse = LocalPlayer:GetMouse()
+
+-- Настройки
+local settings = {
+    AutoClicker = false,
+    Aimbot = false,
+    AntiKnockback = false,
+    ClickSpeed = 0.01,
+    MaxDistance = 50,
+    Friends = {},
+}
+
+table.insert(settings.Friends, LocalPlayer.Name)
+
+-- Создание GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "NEO_ASSIST"
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.DisplayOrder = 999
+
+-- Главное меню (черно-белое)
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Parent = screenGui
+mainFrame.Size = UDim2.new(0, 500, 0, 320)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -160)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)  -- Глубокий черный
+mainFrame.BackgroundTransparency = 0
+mainFrame.Visible = false
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.ZIndex = 10
+
+-- Закругленные углы
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 16)
+mainCorner.Parent = mainFrame
+
+-- Обводка (серая)
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Parent = mainFrame
+mainStroke.Thickness = 1
+mainStroke.Color = Color3.fromRGB(80, 80, 80)
+
+-- Заголовок (темно-серый)
+local titleBar = Instance.new("Frame")
+titleBar.Parent = mainFrame
+titleBar.Size = UDim2.new(1, 0, 0, 45)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+titleBar.ZIndex = mainFrame.ZIndex + 1
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 16)
+titleCorner.Parent = titleBar
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Parent = titleBar
+titleLabel.Size = UDim2.new(1, -50, 1, 0)
+titleLabel.Position = UDim2.new(0, 15, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "⚡ NEO ASSIST"
+titleLabel.TextColor3 = Color3.fromRGB(220, 220, 220)  -- Светло-серый
+titleLabel.TextSize = 20
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.ZIndex = titleBar.ZIndex + 1
+
+local closeButton = Instance.new("TextButton")
+closeButton.Parent = titleBar
+closeButton.Size = UDim2.new(0, 32, 0, 32)
+closeButton.Position = UDim2.new(1, -42, 0.5, -16)
+closeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+closeButton.Text = "✕"
+closeButton.TextColor3 = Color3.fromRGB(200, 200, 200)
+closeButton.TextSize = 18
+closeButton.Font = Enum.Font.GothamBold
+closeButton.ZIndex = titleBar.ZIndex + 1
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeButton
+
+-- === ЛЕВАЯ КОЛОНКА (ТИММЕЙТЫ) ===
+local leftColumn = Instance.new("Frame")
+leftColumn.Parent = mainFrame
+leftColumn.Size = UDim2.new(0.5, -10, 1, -55)
+leftColumn.Position = UDim2.new(0, 10, 0, 50)
+leftColumn.BackgroundTransparency = 1
+leftColumn.ZIndex = mainFrame.ZIndex + 2
+
+local friendsTitle = Instance.new("TextLabel")
+friendsTitle.Parent = leftColumn
+friendsTitle.Size = UDim2.new(1, 0, 0, 30)
+friendsTitle.Position = UDim2.new(0, 5, 0, 0)
+friendsTitle.BackgroundTransparency = 1
+friendsTitle.Text = "👥 ТИММЕЙТЫ"
+friendsTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+friendsTitle.TextSize = 16
+friendsTitle.Font = Enum.Font.GothamBold
+friendsTitle.TextXAlignment = Enum.TextXAlignment.Left
+friendsTitle.ZIndex = leftColumn.ZIndex
+
+-- Поле ввода
+local inputFrame = Instance.new("Frame")
+inputFrame.Parent = leftColumn
+inputFrame.Size = UDim2.new(1, 0, 0, 40)
+inputFrame.Position = UDim2.new(0, 5, 0, 35)
+inputFrame.BackgroundTransparency = 1
+inputFrame.ZIndex = leftColumn.ZIndex
+
+local friendInput = Instance.new("TextBox")
+friendInput.Parent = inputFrame
+friendInput.Size = UDim2.new(0.7, -5, 0, 35)
+friendInput.Position = UDim2.new(0, 0, 0.5, -17)
+friendInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+friendInput.Text = ""
+friendInput.TextColor3 = Color3.fromRGB(220, 220, 220)
+friendInput.PlaceholderText = "Никнейм"
+friendInput.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
+friendInput.TextSize = 13
+friendInput.Font = Enum.Font.Gotham
+friendInput.ClearTextOnFocus = false
+friendInput.ZIndex = inputFrame.ZIndex + 1
+
+local inputCorner = Instance.new("UICorner")
+inputCorner.CornerRadius = UDim.new(0, 6)
+inputCorner.Parent = friendInput
+
+-- Обводка поля ввода
+local inputStroke = Instance.new("UIStroke")
+inputStroke.Parent = friendInput
+inputStroke.Thickness = 1
+inputStroke.Color = Color3.fromRGB(80, 80, 80)
+
+local addFriendBtn = Instance.new("TextButton")
+addFriendBtn.Parent = inputFrame
+addFriendBtn.Size = UDim2.new(0.25, -5, 0, 35)
+addFriendBtn.Position = UDim2.new(0.75, 0, 0.5, -17)
+addFriendBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+addFriendBtn.Text = "+"
+addFriendBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
+addFriendBtn.TextSize = 20
+addFriendBtn.Font = Enum.Font.GothamBold
+addFriendBtn.ZIndex = inputFrame.ZIndex + 1
+
+local addCorner = Instance.new("UICorner")
+addCorner.CornerRadius = UDim.new(0, 6)
+addCorner.Parent = addFriendBtn
+
+-- Список друзей
+local friendsList = Instance.new("ScrollingFrame")
+friendsList.Parent = leftColumn
+friendsList.Size = UDim2.new(1, 0, 0, 170)
+friendsList.Position = UDim2.new(0, 5, 0, 80)
+friendsList.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+friendsList.BackgroundTransparency = 0
+friendsList.BorderSizePixel = 0
+friendsList.ScrollBarThickness = 4
+friendsList.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 150)
+friendsList.CanvasSize = UDim2.new(0, 0, 0, 0)
+friendsList.ZIndex = leftColumn.ZIndex + 1
+
+local listCorner = Instance.new("UICorner")
+listCorner.CornerRadius = UDim.new(0, 8)
+listCorner.Parent = friendsList
+
+-- === ПРАВАЯ КОЛОНКА (ФУНКЦИИ) ===
+local rightColumn = Instance.new("Frame")
+rightColumn.Parent = mainFrame
+rightColumn.Size = UDim2.new(0.5, -10, 1, -55)
+rightColumn.Position = UDim2.new(0.5, 0, 0, 50)
+rightColumn.BackgroundTransparency = 1
+rightColumn.ZIndex = mainFrame.ZIndex + 2
+
+local functionsTitle = Instance.new("TextLabel")
+functionsTitle.Parent = rightColumn
+functionsTitle.Size = UDim2.new(1, 0, 0, 30)
+functionsTitle.Position = UDim2.new(0, 5, 0, 0)
+functionsTitle.BackgroundTransparency = 1
+functionsTitle.Text = "ФУНКЦИИ"
+functionsTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
+functionsTitle.TextSize = 16
+functionsTitle.Font = Enum.Font.GothamBold
+functionsTitle.TextXAlignment = Enum.TextXAlignment.Left
+functionsTitle.ZIndex = rightColumn.ZIndex
+
+-- Функция создания кнопки
+local function createFunctionButton(text, key, yPos)
+    local btnFrame = Instance.new("Frame")
+    btnFrame.Parent = rightColumn
+    btnFrame.Size = UDim2.new(1, -10, 0, 40)
+    btnFrame.Position = UDim2.new(0, 5, 0, yPos)
+    btnFrame.BackgroundTransparency = 1
+    btnFrame.ZIndex = rightColumn.ZIndex
+
+    local label = Instance.new("TextLabel")
+    label.Parent = btnFrame
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 220)
+    label.TextSize = 14
+    label.Font = Enum.Font.GothamBold
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.ZIndex = btnFrame.ZIndex
+
+    local keyLabel = Instance.new("TextLabel")
+    keyLabel.Parent = btnFrame
+    keyLabel.Size = UDim2.new(0, 30, 1, 0)
+    keyLabel.Position = UDim2.new(0.6, 0, 0, 0)
+    keyLabel.BackgroundTransparency = 1
+    keyLabel.Text = "["..key.."]"
+    keyLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+    keyLabel.TextSize = 13
+    keyLabel.Font = Enum.Font.GothamBold
+    keyLabel.TextXAlignment = Enum.TextXAlignment.Left
+    keyLabel.ZIndex = btnFrame.ZIndex
+
+    local button = Instance.new("TextButton")
+    button.Parent = btnFrame
+    button.Size = UDim2.new(0, 50, 0, 30)
+    button.Position = UDim2.new(0.8, 0, 0.5, -15)
+    button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    button.Text = "OFF"
+    button.TextColor3 = Color3.fromRGB(150, 150, 150)
+    button.TextSize = 12
+    button.Font = Enum.Font.GothamBold
+    button.ZIndex = btnFrame.ZIndex + 1
+
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 5)
+    btnCorner.Parent = button
+    
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Parent = button
+    btnStroke.Thickness = 1
+    btnStroke.Color = Color3.fromRGB(80, 80, 80)
+
+    return button
+end
+
+-- Создаем кнопки (G, T, Y)
+local autoClickerBtn = createFunctionButton("АВТО-КИКЕР", "G", 35)
+local aimbotBtn = createFunctionButton("АИМБОТ", "T", 80)
+local antiKnockBtn = createFunctionButton("АНТИ-НОКБЭК", "Y", 125)
+
+-- === ФУНКЦИЯ ОБНОВЛЕНИЯ СПИСКА ДРУЗЕЙ ===
+local function updateFriendsList()
+    for _, child in pairs(friendsList:GetChildren()) do
+        child:Destroy()
+    end
+
+    local yPosList = 5
+    for i, username in ipairs(settings.Friends) do
+        if username ~= LocalPlayer.Name then
+            local friendFrame = Instance.new("Frame")
+            friendFrame.Parent = friendsList
+            friendFrame.Size = UDim2.new(1, -15, 0, 35)
+            friendFrame.Position = UDim2.new(0, 7, 0, yPosList)
+            friendFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            friendFrame.BackgroundTransparency = 0
+            friendFrame.ZIndex = friendsList.ZIndex + 1
+
+            local fCorner = Instance.new("UICorner")
+            fCorner.CornerRadius = UDim.new(0, 6)
+            fCorner.Parent = friendFrame
+            
+            local fStroke = Instance.new("UIStroke")
+            fStroke.Parent = friendFrame
+            fStroke.Thickness = 1
+            fStroke.Color = Color3.fromRGB(60, 60, 60)
+
+            local bullet = Instance.new("TextLabel")
+            bullet.Parent = friendFrame
+            bullet.Size = UDim2.new(0, 20, 1, 0)
+            bullet.Position = UDim2.new(0, 8, 0, 0)
+            bullet.BackgroundTransparency = 1
+            bullet.Text = "•"
+            bullet.TextColor3 = Color3.fromRGB(150, 150, 150)
+            bullet.TextSize = 18
+            bullet.Font = Enum.Font.Gotham
+            bullet.ZIndex = friendFrame.ZIndex + 1
+
+            local nameLabel = Instance.new("TextLabel")
+            nameLabel.Parent = friendFrame
+            nameLabel.Size = UDim2.new(0.6, -20, 1, 0)
+            nameLabel.Position = UDim2.new(0, 28, 0, 0)
+            nameLabel.BackgroundTransparency = 1
+            nameLabel.Text = username
+            nameLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+            nameLabel.TextSize = 13
+            nameLabel.Font = Enum.Font.Gotham
+            nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+            nameLabel.ZIndex = friendFrame.ZIndex + 1
+
+            local removeBtn = Instance.new("TextButton")
+            removeBtn.Parent = friendFrame
+            removeBtn.Size = UDim2.new(0, 28, 0, 28)
+            removeBtn.Position = UDim2.new(1, -38, 0.5, -14)
+            removeBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            removeBtn.Text = "✕"
+            removeBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+            removeBtn.TextSize = 14
+            removeBtn.Font = Enum.Font.GothamBold
+            removeBtn.ZIndex = friendFrame.ZIndex + 2
+
+            local rCorner = Instance.new("UICorner")
+            rCorner.CornerRadius = UDim.new(0, 4)
+            rCorner.Parent = removeBtn
+
+            removeBtn.MouseButton1Click:Connect(function()
+                for j = #settings.Friends, 1, -1 do
+                    if settings.Friends[j] == username then
+                        table.remove(settings.Friends, j)
+                        break
+                    end
+                end
+                updateFriendsList()
+            end)
+
+            yPosList = yPosList + 40
+        end
+    end
+    friendsList.CanvasSize = UDim2.new(0, 0, 0, yPosList + 5)
+end
+
+updateFriendsList()
+
+addFriendBtn.MouseButton1Click:Connect(function()
+    local username = friendInput.Text
+    if username and username ~= "" then
+        local exists = false
+        for _, name in ipairs(settings.Friends) do
+            if name:lower() == username:lower() then
+                exists = true
+                break
+            end
+        end
+        if not exists then
+            table.insert(settings.Friends, username)
+            friendInput.Text = ""
+            updateFriendsList()
+        end
+    end
+end)
+
+-- === ФУНКЦИИ ===
+local lastPos = nil
+local knockbackDetected = false
+
+local function updateButton(btn, state)
+    if state then
+        btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Text = "ON"
+    else
+        btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+        btn.TextColor3 = Color3.fromRGB(150, 150, 150)
+        btn.Text = "OFF"
+    end
+end
+
+-- Авто-кикер
+local function doAutoClick()
+    if not settings.AutoClicker then return end
+    pcall(mouse1click)
+end
+
+-- Аимбот
+local function isFriend(name)
+    for _, f in ipairs(settings.Friends) do
+        if f:lower() == name:lower() then return true end
+    end
+    return false
+end
+
+local function getTarget()
+    local nearest, nearestDist = nil, settings.MaxDistance
+    local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return nil end
+    
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and p.Character and not isFriend(p.Name) then
+            local part = p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("HumanoidRootPart")
+            if part then
+                local dist = (myRoot.Position - part.Position).Magnitude
+                if dist < nearestDist then
+                    nearestDist, nearest = dist, p
+                end
+            end
+        end
+    end
+    return nearest
+end
+
+local function doAimbot()
+    if not settings.Aimbot then return end
+    local target = getTarget()
+    if target and target.Character then
+        local part = target.Character:FindFirstChild("Head") or target.Character:FindFirstChild("HumanoidRootPart")
+        if part then
+            workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, part.Position)
+        end
+    end
+end
+
+-- Анти-нокбэк (УЛУЧШЕННАЯ ВЕРСИЯ)
+local function doAntiKnockback()
+    if not settings.AntiKnockback then return end
+    
+    local char = LocalPlayer.Character
+    if not char then 
+        lastPos = nil
+        return 
+    end
+    
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    local humanoid = char:FindFirstChild("Humanoid")
+    if not humanoid or humanoid.Health <= 0 then
+        lastPos = nil
+        return
+    end
+    
+    local currentPos = root.Position
+    
+    -- Если запомненной позиции нет, запоминаем текущую
+    if not lastPos then
+        lastPos = currentPos
+        return
+    end
+    
+    -- Вычисляем скорость перемещения
+    local distance = (currentPos - lastPos).Magnitude
+    
+    -- Если резкое перемещение (нокбэк) и игрок не управляет движением
+    if distance > 15 and humanoid.MoveDirection.Magnitude < 0.1 then
+        -- Возвращаем на место
+        root.CFrame = CFrame.new(lastPos)
+        knockbackDetected = true
+    else
+        -- Обновляем позицию только при нормальном движении
+        if distance < 10 then
+            lastPos = currentPos
+        end
+        knockbackDetected = false
+    end
+end
+
+-- === ОБРАБОТЧИКИ КНОПОК ===
+autoClickerBtn.MouseButton1Click:Connect(function()
+    settings.AutoClicker = not settings.AutoClicker
+    updateButton(autoClickerBtn, settings.AutoClicker)
+end)
+
+aimbotBtn.MouseButton1Click:Connect(function()
+    settings.Aimbot = not settings.Aimbot
+    updateButton(aimbotBtn, settings.Aimbot)
+end)
+
+antiKnockBtn.MouseButton1Click:Connect(function()
+    settings.AntiKnockback = not settings.AntiKnockback
+    updateButton(antiKnockBtn, settings.AntiKnockback)
+    lastPos = nil -- Сбрасываем позицию при переключении
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+end)
+
+-- === ГОРЯЧИЕ КЛАВИШИ (G, T, Y) ===
+UserInputService.InputBegan:Connect(function(input, gp)
+    if gp then return end
+    
+    if input.KeyCode == Enum.KeyCode.F1 then
+        mainFrame.Visible = not mainFrame.Visible
+    elseif input.KeyCode == Enum.KeyCode.G then
+        settings.AutoClicker = not settings.AutoClicker
+        updateButton(autoClickerBtn, settings.AutoClicker)
+    elseif input.KeyCode == Enum.KeyCode.T then
+        settings.Aimbot = not settings.Aimbot
+        updateButton(aimbotBtn, settings.Aimbot)
+    elseif input.KeyCode == Enum.KeyCode.Y then
+        settings.AntiKnockback = not settings.AntiKnockback
+        updateButton(antiKnockBtn, settings.AntiKnockback)
+        lastPos = nil
+    end
+end)
+
+-- === ОСНОВНЫЕ ЦИКЛЫ ===
+spawn(function()
+    while true do
+        if settings.AutoClicker then doAutoClick() end
+        wait(settings.ClickSpeed)
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if settings.Aimbot then doAimbot() end
+    if settings.AntiKnockback then doAntiKnockback() end
+end)
+
+print("⚡ NEO ASSIST (Монохром) ЗАГРУЖЕН")
+print("F1 - меню | G - АВТО-КИКЕР | T - АИМБОТ | Y - АНТИ-НОКБЭК")
