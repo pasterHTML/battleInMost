@@ -1,11 +1,10 @@
 --[[
-    NEO ASSIST PRO
-    Функции:
-    - АВТО-КИКЕР [G] (настраиваемая скорость)
-    - АИМБОТ [T] (радиус + проверка стен)
-    - КИЛЛ АУРА [K] (бьёт всех вокруг, даже сзади)
-    - АНТИ-НОКБЭК [Y]
-    - Текстовые поля для ввода чисел
+    NEO ASSIST PRO - Мульти-килл аура
+    4 метода удара:
+    1. MOUSE1 - эмуляция клика мыши
+    2. REMOTE - поиск RemoteEvent для удара
+    3. TOOL - использование инструмента
+    4. RAY - рейкаст (удар по лучу)
 ]]
 
 local Players = game:GetService("Players")
@@ -22,7 +21,8 @@ local settings = {
     AntiKnockback = false,
     ClickSpeed = 0.01,
     AimbotRadius = 30,
-    KillAuraRadius = 20,      -- Радиус килл ауры
+    KillAuraRadius = 20,
+    KillMethod = 1,  -- 1: MOUSE1, 2: REMOTE, 3: TOOL, 4: RAY
     CheckWalls = true,
     Friends = {},
 }
@@ -41,8 +41,8 @@ screenGui.DisplayOrder = 999
 local mainFrame = Instance.new("Frame")
 mainFrame.Name = "MainFrame"
 mainFrame.Parent = screenGui
-mainFrame.Size = UDim2.new(0, 500, 0, 480)  -- Выше для новых полей
-mainFrame.Position = UDim2.new(0.5, -250, 0.5, -240)
+mainFrame.Size = UDim2.new(0, 500, 0, 520)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -260)
 mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 mainFrame.BackgroundTransparency = 0
 mainFrame.Visible = false
@@ -50,12 +50,10 @@ mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.ZIndex = 10
 
--- Закругленные углы
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 16)
 mainCorner.Parent = mainFrame
 
--- Обводка
 local mainStroke = Instance.new("UIStroke")
 mainStroke.Parent = mainFrame
 mainStroke.Thickness = 1
@@ -100,7 +98,7 @@ local closeCorner = Instance.new("UICorner")
 closeCorner.CornerRadius = UDim.new(0, 6)
 closeCorner.Parent = closeButton
 
--- === ЛЕВАЯ КОЛОНКА (ТИММЕЙТЫ) ===
+-- === ЛЕВАЯ КОЛОНКА ===
 local leftColumn = Instance.new("Frame")
 leftColumn.Parent = mainFrame
 leftColumn.Size = UDim2.new(0.5, -10, 1, -55)
@@ -118,15 +116,12 @@ friendsTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
 friendsTitle.TextSize = 16
 friendsTitle.Font = Enum.Font.GothamBold
 friendsTitle.TextXAlignment = Enum.TextXAlignment.Left
-friendsTitle.ZIndex = leftColumn.ZIndex
 
--- Поле ввода никнейма
 local inputFrame = Instance.new("Frame")
 inputFrame.Parent = leftColumn
 inputFrame.Size = UDim2.new(1, 0, 0, 40)
 inputFrame.Position = UDim2.new(0, 5, 0, 35)
 inputFrame.BackgroundTransparency = 1
-inputFrame.ZIndex = leftColumn.ZIndex
 
 local friendInput = Instance.new("TextBox")
 friendInput.Parent = inputFrame
@@ -140,7 +135,6 @@ friendInput.PlaceholderColor3 = Color3.fromRGB(100, 100, 100)
 friendInput.TextSize = 13
 friendInput.Font = Enum.Font.Gotham
 friendInput.ClearTextOnFocus = false
-friendInput.ZIndex = inputFrame.ZIndex + 1
 
 local inputCorner = Instance.new("UICorner")
 inputCorner.CornerRadius = UDim.new(0, 6)
@@ -160,7 +154,6 @@ addFriendBtn.Text = "+"
 addFriendBtn.TextColor3 = Color3.fromRGB(220, 220, 220)
 addFriendBtn.TextSize = 20
 addFriendBtn.Font = Enum.Font.GothamBold
-addFriendBtn.ZIndex = inputFrame.ZIndex + 1
 
 local addCorner = Instance.new("UICorner")
 addCorner.CornerRadius = UDim.new(0, 6)
@@ -183,7 +176,7 @@ local listCorner = Instance.new("UICorner")
 listCorner.CornerRadius = UDim.new(0, 8)
 listCorner.Parent = friendsList
 
--- === ПРАВАЯ КОЛОНКА (ФУНКЦИИ) ===
+-- === ПРАВАЯ КОЛОНКА ===
 local rightColumn = Instance.new("Frame")
 rightColumn.Parent = mainFrame
 rightColumn.Size = UDim2.new(0.5, -10, 1, -55)
@@ -201,7 +194,6 @@ functionsTitle.TextColor3 = Color3.fromRGB(200, 200, 200)
 functionsTitle.TextSize = 16
 functionsTitle.Font = Enum.Font.GothamBold
 functionsTitle.TextXAlignment = Enum.TextXAlignment.Left
-functionsTitle.ZIndex = rightColumn.ZIndex
 
 -- Функция создания кнопки
 local function createFunctionButton(text, key, yPos)
@@ -210,7 +202,6 @@ local function createFunctionButton(text, key, yPos)
     btnFrame.Size = UDim2.new(1, -10, 0, 40)
     btnFrame.Position = UDim2.new(0, 5, 0, yPos)
     btnFrame.BackgroundTransparency = 1
-    btnFrame.ZIndex = rightColumn.ZIndex
 
     local label = Instance.new("TextLabel")
     label.Parent = btnFrame
@@ -222,7 +213,6 @@ local function createFunctionButton(text, key, yPos)
     label.TextSize = 14
     label.Font = Enum.Font.GothamBold
     label.TextXAlignment = Enum.TextXAlignment.Left
-    label.ZIndex = btnFrame.ZIndex
 
     local keyLabel = Instance.new("TextLabel")
     keyLabel.Parent = btnFrame
@@ -234,7 +224,6 @@ local function createFunctionButton(text, key, yPos)
     keyLabel.TextSize = 13
     keyLabel.Font = Enum.Font.GothamBold
     keyLabel.TextXAlignment = Enum.TextXAlignment.Left
-    keyLabel.ZIndex = btnFrame.ZIndex
 
     local button = Instance.new("TextButton")
     button.Parent = btnFrame
@@ -245,7 +234,6 @@ local function createFunctionButton(text, key, yPos)
     button.TextColor3 = Color3.fromRGB(150, 150, 150)
     button.TextSize = 12
     button.Font = Enum.Font.GothamBold
-    button.ZIndex = btnFrame.ZIndex + 1
 
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 5)
@@ -259,16 +247,80 @@ local function createFunctionButton(text, key, yPos)
     return button
 end
 
--- Создаем кнопки (G, T, K, Y)
+-- Кнопки функций
 local autoClickerBtn = createFunctionButton("АВТО-КИКЕР", "G", 35)
 local aimbotBtn = createFunctionButton("АИМБОТ", "T", 80)
 local killAuraBtn = createFunctionButton("КИЛЛ АУРА", "K", 125)
 local antiKnockBtn = createFunctionButton("АНТИ-НОКБЭК", "Y", 170)
 
--- === ТЕКСТОВЫЕ ПОЛЯ ДЛЯ ВВОДА ===
-local inputY = 215
+-- === ВЫБОР МЕТОДА КИЛЛ АУРЫ ===
+local methodFrame = Instance.new("Frame")
+methodFrame.Parent = rightColumn
+methodFrame.Size = UDim2.new(1, -10, 0, 40)
+methodFrame.Position = UDim2.new(0, 5, 0, 215)
+methodFrame.BackgroundTransparency = 1
 
--- Поле для радиуса аимбота
+local methodLabel = Instance.new("TextLabel")
+methodLabel.Parent = methodFrame
+methodLabel.Size = UDim2.new(0.5, 0, 1, 0)
+methodLabel.Position = UDim2.new(0, 0, 0, 0)
+methodLabel.BackgroundTransparency = 1
+methodLabel.Text = "МЕТОД УДАРА"
+methodLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+methodLabel.TextSize = 13
+methodLabel.Font = Enum.Font.Gotham
+
+local methodDisplay = Instance.new("TextLabel")
+methodDisplay.Parent = methodFrame
+methodDisplay.Size = UDim2.new(0.4, 0, 0, 30)
+methodDisplay.Position = UDim2.new(0.6, 0, 0.5, -15)
+methodDisplay.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+methodDisplay.Text = "MOUSE1"
+methodDisplay.TextColor3 = Color3.fromRGB(220, 220, 220)
+methodDisplay.TextSize = 13
+methodDisplay.Font = Enum.Font.GothamBold
+
+local methodCorner = Instance.new("UICorner")
+methodCorner.CornerRadius = UDim.new(0, 5)
+methodCorner.Parent = methodDisplay
+
+local methodStroke = Instance.new("UIStroke")
+methodStroke.Parent = methodDisplay
+methodStroke.Thickness = 1
+methodStroke.Color = Color3.fromRGB(80, 80, 80)
+
+local methodLeft = Instance.new("TextButton")
+methodLeft.Parent = methodFrame
+methodLeft.Size = UDim2.new(0, 20, 0, 20)
+methodLeft.Position = UDim2.new(0.55, 0, 0.5, -10)
+methodLeft.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+methodLeft.Text = "<"
+methodLeft.TextColor3 = Color3.fromRGB(200, 200, 200)
+methodLeft.TextSize = 14
+methodLeft.Font = Enum.Font.GothamBold
+
+local methodLeftCorner = Instance.new("UICorner")
+methodLeftCorner.CornerRadius = UDim.new(0, 4)
+methodLeftCorner.Parent = methodLeft
+
+local methodRight = Instance.new("TextButton")
+methodRight.Parent = methodFrame
+methodRight.Size = UDim2.new(0, 20, 0, 20)
+methodRight.Position = UDim2.new(0.95, -20, 0.5, -10)
+methodRight.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+methodRight.Text = ">"
+methodRight.TextColor3 = Color3.fromRGB(200, 200, 200)
+methodRight.TextSize = 14
+methodRight.Font = Enum.Font.GothamBold
+
+local methodRightCorner = Instance.new("UICorner")
+methodRightCorner.CornerRadius = UDim.new(0, 4)
+methodRightCorner.Parent = methodRight
+
+-- === ТЕКСТОВЫЕ ПОЛЯ ===
+local inputY = 260
+
+-- Радиус аимбота
 local radiusFrame = Instance.new("Frame")
 radiusFrame.Parent = rightColumn
 radiusFrame.Size = UDim2.new(1, -10, 0, 35)
@@ -294,7 +346,6 @@ radiusInput.Text = tostring(settings.AimbotRadius)
 radiusInput.TextColor3 = Color3.fromRGB(220, 220, 220)
 radiusInput.TextSize = 13
 radiusInput.Font = Enum.Font.Gotham
-radiusInput.ZIndex = rightColumn.ZIndex + 1
 
 local radiusInputCorner = Instance.new("UICorner")
 radiusInputCorner.CornerRadius = UDim.new(0, 5)
@@ -305,7 +356,7 @@ radiusStroke.Parent = radiusInput
 radiusStroke.Thickness = 1
 radiusStroke.Color = Color3.fromRGB(80, 80, 80)
 
--- Поле для скорости кликера
+-- Скорость кликера
 local speedFrame = Instance.new("Frame")
 speedFrame.Parent = rightColumn
 speedFrame.Size = UDim2.new(1, -10, 0, 35)
@@ -331,7 +382,6 @@ speedInput.Text = string.format("%.3f", settings.ClickSpeed)
 speedInput.TextColor3 = Color3.fromRGB(220, 220, 220)
 speedInput.TextSize = 13
 speedInput.Font = Enum.Font.Gotham
-speedInput.ZIndex = rightColumn.ZIndex + 1
 
 local speedInputCorner = Instance.new("UICorner")
 speedInputCorner.CornerRadius = UDim.new(0, 5)
@@ -342,7 +392,7 @@ speedStroke.Parent = speedInput
 speedStroke.Thickness = 1
 speedStroke.Color = Color3.fromRGB(80, 80, 80)
 
--- Поле для радиуса килл ауры
+-- Радиус ауры
 local killRadiusFrame = Instance.new("Frame")
 killRadiusFrame.Parent = rightColumn
 killRadiusFrame.Size = UDim2.new(1, -10, 0, 35)
@@ -368,7 +418,6 @@ killRadiusInput.Text = tostring(settings.KillAuraRadius)
 killRadiusInput.TextColor3 = Color3.fromRGB(220, 220, 220)
 killRadiusInput.TextSize = 13
 killRadiusInput.Font = Enum.Font.Gotham
-killRadiusInput.ZIndex = rightColumn.ZIndex + 1
 
 local killRadiusInputCorner = Instance.new("UICorner")
 killRadiusInputCorner.CornerRadius = UDim.new(0, 5)
@@ -394,7 +443,6 @@ local function updateFriendsList()
             friendFrame.Position = UDim2.new(0, 7, 0, yPosList)
             friendFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
             friendFrame.BackgroundTransparency = 0
-            friendFrame.ZIndex = friendsList.ZIndex + 1
 
             local fCorner = Instance.new("UICorner")
             fCorner.CornerRadius = UDim.new(0, 6)
@@ -414,7 +462,6 @@ local function updateFriendsList()
             bullet.TextColor3 = Color3.fromRGB(150, 150, 150)
             bullet.TextSize = 18
             bullet.Font = Enum.Font.Gotham
-            bullet.ZIndex = friendFrame.ZIndex + 1
 
             local nameLabel = Instance.new("TextLabel")
             nameLabel.Parent = friendFrame
@@ -426,7 +473,6 @@ local function updateFriendsList()
             nameLabel.TextSize = 13
             nameLabel.Font = Enum.Font.Gotham
             nameLabel.TextXAlignment = Enum.TextXAlignment.Left
-            nameLabel.ZIndex = friendFrame.ZIndex + 1
 
             local removeBtn = Instance.new("TextButton")
             removeBtn.Parent = friendFrame
@@ -437,7 +483,6 @@ local function updateFriendsList()
             removeBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
             removeBtn.TextSize = 14
             removeBtn.Font = Enum.Font.GothamBold
-            removeBtn.ZIndex = friendFrame.ZIndex + 2
 
             local rCorner = Instance.new("UICorner")
             rCorner.CornerRadius = UDim.new(0, 4)
@@ -479,7 +524,7 @@ addFriendBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- === ОБРАБОТЧИКИ ТЕКСТОВЫХ ПОЛЕЙ ===
+-- === ОБРАБОТЧИКИ ===
 radiusInput.FocusLost:Connect(function()
     local val = tonumber(radiusInput.Text)
     if val and val > 0 then
@@ -504,8 +549,24 @@ killRadiusInput.FocusLost:Connect(function()
     killRadiusInput.Text = tostring(settings.KillAuraRadius)
 end)
 
+-- Переключение метода
+local methods = {"MOUSE1", "REMOTE", "TOOL", "RAY"}
+methodLeft.MouseButton1Click:Connect(function()
+    settings.KillMethod = settings.KillMethod - 1
+    if settings.KillMethod < 1 then settings.KillMethod = 4 end
+    methodDisplay.Text = methods[settings.KillMethod]
+end)
+
+methodRight.MouseButton1Click:Connect(function()
+    settings.KillMethod = settings.KillMethod + 1
+    if settings.KillMethod > 4 then settings.KillMethod = 1 end
+    methodDisplay.Text = methods[settings.KillMethod]
+end)
+
 -- === ФУНКЦИИ ===
 local lastPos = nil
+local lastAttackTime = 0
+local attackCooldown = 0.3
 
 local function updateButton(btn, state)
     if state then
@@ -525,7 +586,7 @@ local function doAutoClick()
     pcall(mouse1click)
 end
 
--- Проверка видимости через стены
+-- Проверка видимости
 local function isTargetVisible(targetPart)
     if not settings.CheckWalls then return true end
     
@@ -588,7 +649,57 @@ local function doAimbot()
     end
 end
 
--- КИЛЛ АУРА (бьёт всех вокруг, даже сзади)
+-- === КИЛЛ АУРА С 4 МЕТОДАМИ ===
+local function findRemoteEvent()
+    -- Ищем RemoteEvent для удара
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("RemoteEvent") and obj.Name:lower():find("attack") or obj.Name:lower():find("hit") or obj.Name:lower():find("damage") then
+            return obj
+        end
+    end
+    return nil
+end
+
+local function attackWithMethod(target, method)
+    if not target or not target.Character then return end
+    
+    local rootPart = target.Character:FindFirstChild("HumanoidRootPart") or target.Character:FindFirstChild("Torso")
+    if not rootPart then return end
+    
+    if method == 1 then  -- MOUSE1
+        pcall(mouse1click)
+        
+    elseif method == 2 then  -- REMOTE
+        local remote = findRemoteEvent()
+        if remote then
+            pcall(function()
+                remote:FireServer(rootPart)
+            end)
+        end
+        
+    elseif method == 3 then  -- TOOL
+        local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+        if tool then
+            pcall(function()
+                tool:Activate()
+            end)
+        end
+        
+    elseif method == 4 then  -- RAY
+        -- Эмулируем удар через луч
+        pcall(function()
+            local ray = Ray.new(workspace.CurrentCamera.CFrame.Position, (rootPart.Position - workspace.CurrentCamera.CFrame.Position).Unit * 1000)
+            local hit = workspace:FindPartOnRay(ray, LocalPlayer.Character)
+            if hit and hit.Parent then
+                local player = Players:GetPlayerFromCharacter(hit.Parent)
+                if player == target then
+                    mouse1click()
+                end
+            end
+        end)
+    end
+end
+
 local function getKillAuraTarget()
     local nearest, nearestDist = nil, settings.KillAuraRadius
     local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -611,13 +722,13 @@ end
 local function doKillAura()
     if not settings.KillAura then return end
     
+    local currentTime = tick()
+    if currentTime - lastAttackTime < attackCooldown then return end
+    
     local target = getKillAuraTarget()
-    if target and target.Character then
-        -- Эмулируем удар (клик по цели)
-        -- В зависимости от игры может быть разная логика
-        pcall(function()
-            mouse1click()
-        end)
+    if target then
+        attackWithMethod(target, settings.KillMethod)
+        lastAttackTime = currentTime
     end
 end
 
@@ -722,4 +833,5 @@ end)
 
 print("⚡ NEO ASSIST PRO ЗАГРУЖЕН")
 print("F1 - меню | G - КИКЕР | T - АИМ | K - АУРА | Y - НОКБЭК")
-print("✅ Радиус и скорость теперь можно вводить вручную!")
+print("✅ 4 метода удара: MOUSE1, REMOTE, TOOL, RAY")
+print("👉 Переключай метод стрелками в меню")
